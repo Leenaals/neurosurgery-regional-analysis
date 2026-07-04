@@ -1,0 +1,254 @@
+---
+title: "Neurosurgery Data Analysis"
+author: "group 3"
+date: "2025-11-14"
+output: pdf_document
+---
+# Introduction
+This project focuses on analyzing a real-world healthcare dataset called “A List of OR for Neurosciences”, published by King Faisal Specialist Hospital and Research Centre (KFSH&RC) on the Saudi Open Data Portal. 
+The dataset includes 749 neurosurgery cases representing patients who had operations in the Department of Neurosciences each record contains details such as the year and month of operation, gender, nationality, marital status, region, facility name, and medical department. 
+The main goal of this project is to measure how the region factor affects the number of neurosurgery operations, and to identify whether there are significant differences between regions in Saudi Arabia.
+
+
+Before starting the analysis, the dataset will be cleaned and preprocessed to remove missing or incorrect values. Then ANOVA test will be applied to check whether there will be any differences in the average number of neurosurgery operations between regions.                                                                               
+
+We will calculate descriptive statistics to understand the general patterns of the data. This will include looking at measures of central tendency (mean and median), as well as measures of dispersion (range, variance, and standard deviation) We will also look at how neurosurgery cases will be distributed across different regions, genders, and marital statuses. 
+These steps will help us get a clear overview of how the data will be organized.
+
+In conclusion, this project will provide a clear overview of how neurosurgery operations will be distributed across different hospitals in Saudi Arabia.
+The analysis will show how the number of cases will differ from one region to another, which will be the main goal of this report.Understanding these differences will support better planning in the healthcare sector and improve future resource allocation, helping decision makers focus on areas that will need more medical capacity.
+
+
+# Load required libraries
+
+```{r load-data, message=FALSE, warning=FALSE}
+library(dplyr)
+library(ggplot2)
+library(readxl)
+library(psych)
+library(knitr)
+library(multcomp)
+```
+
+
+# load data
+
+```{r Load data}
+df <- read_excel("A_list_of_OR_For_Neurosciences_xlsx.xlsx", .name_repair = "minimal")
+
+
+```
+
+# clean REGION Column
+
+This step will make sure that all regions in the dataset will be accurate and ready for analysis because they will affect the accuracy of the results.
+
+
+```{r clean-region}
+df_clean <- df %>% 
+  filter(
+    !is.na(REGION),
+    REGION != "",
+    REGION != "Unknown",
+    REGION != "unknown",
+    REGION != "UNKNOWN",
+    REGION != "Undefined",
+    REGION != "UNDEFINED"
+  )
+```
+
+
+# Descriptive Statistics
+
+
+```{r descriptive summary }
+df2<- df[, names(df) != ""]
+df2<- df %>% mutate(across(where(is.character), as.factor))
+
+
+summary_table <- psych::describe(df)
+summary_table_simple <- summary_table[, c("vars","n","mean","sd","median","min","max")]
+
+
+print(knitr::kable(summary_table_simple, caption = "Descriptive Summary"))
+
+```
+   
+# Table 1: Descriptive Summary
+   
+Table 1 shows a simple summary of all the variables in our dataset.
+We can see that all surgeries happened in the same year 2025, and the month values are only from 1 to 3 which means the operations took place during the first three months of the year.
+
+For the SEX variable, the average shows that the number of male patients is higher than female patients. The NATIONALITY variable doesn’t change much, which means most patients are from the same group.
+The MARITAL_TYPE variable has more variation, so we can tell that the dataset includes patients with different marital statuses.
+
+For the REGION variable, the values are spread across several regions, and from the numbers we can notice that some regions have higher counts than others.
+The DEPARTMENT_NAME and FACILITY columns show that the surgeries were done in different hospitals not just one location.
+this table helps us see the highest and lowest values in each variable and gives a clear idea about how the data is organized before we start the analysis.
+
+# Region Distribution
+```{r region table }
+region_table <- table(df_clean$REGION)
+region_table <- region_table[region_table != 10]
+print(knitr::kable(region_table, caption = "Region Distribution"))
+
+```
+
+# Table 2: Region Distribution
+
+
+Table 2 shows how the neurosurgery cases are distributed across the regions and this supports the main goal of our project which is to measure how the region affects the number of operations. 
+The Central Region has the highest number of cases with 240, followed by the Western Region with 210,The Southern Region has 120 cases, the Northern Region has 82 cases, and the Eastern Region has the lowest count with 73.
+
+This table is important because it gives us a clear picture of how the cases are spread across the regions, and this will help us understand the results when we apply the ANOVA test later.
+\newpage
+
+# Facility Distribution
+```{r facility table}
+print(knitr::kable(table(df$LOC_FACILITY_CD_DESC), caption = "Facility Distribution"))
+
+
+```
+
+
+# Table 3: Facility Distribution
+
+Table 3 shows how the neurosurgery cases are distributed across the healthcare facilities. The Riyadh facility has the highest number of cases with 533 which makes it the main center for neurosurgery operations. 
+The Jeddah facility comes next with 201 cases. The Madinah facility has the lowest number with only 15 cases.
+
+This table helps us understand which facilities handle most of the neurosurgery cases and which ones receive fewer patients.
+ It also shows the difference in workload between the hospitals which gives a clearer picture of how the operations are spread across the healthcare system.
+
+
+
+
+
+# Count number of operations for each region
+In this step, the number of neurosurgery operations will be counted for each region. This will help us see how the cases will be distributed across different areas and will make it easier to compare the regions later in the analysis.
+
+
+```{r region counts }
+
+region_counts <- df_clean %>%
+  group_by(REGION) %>%
+  summarise(Number_of_Operations = n())
+# Display the results after cleaning
+region_counts
+```
+
+\newpage
+# Bar Plot  Regions
+```{r barplot region}
+
+barplot(
+  region_counts$Number_of_Operations,
+  names.arg = region_counts$REGION,
+  col = "skyblue",
+  main = "Number of Operations by Region",
+  ylab = "Number of Operations",
+  xlab = "Region",
+  las = 2
+
+)
+```
+
+The chart shows the distribution of neurosurgery operations across different regions.
+The CentralRegion recorded the highest number of cases, followed by the Western Region. In contrast, the Eastern, Northern, and Southern regions show noticeably lower counts. This indicates that most neurosurgical procedures were concentrated in the Central and Western regions.
+
+
+\newpage
+# Gender Plot
+```{r plot gender}
+
+p_gender <- ggplot(df, aes(x = SEX, fill = SEX)) +
+  geom_bar() +
+  scale_fill_manual(values = c("Female" = "pink", "Male" = "skyblue")) +
+  labs(
+    title = "Distribution of Gender",
+    x = "Gender",
+    y = "Number of Cases"
+  ) +
+  theme_minimal(base_size = 12)
+
+p_gender
+```
+
+The chart shows the distribution of patient visits to the Neurosciences Department by gender.Male patients recorded a higher number of visits about 420 compared to roughly 320 for females.This suggests that males may seek or require neurosurgical care more frequently during the study period.
+
+
+\newpage
+# Marital Type Plot
+```{r plot marital}
+
+p_marital <- ggplot(df, aes(x = MARITAL_TYPE)) +
+  geom_bar(fill = "skyblue") +
+  labs(
+    title = "Distribution of Marital Type",
+    x = "Marital Type",
+    y = "Number of Cases"
+  ) +
+  theme_minimal(base_size = 12)
+
+print(p_marital)
+```
+
+The chart shows the distribution of neurosurgery cases by marital status at KFSH&RC. Single patients make up the largest group with about 465 cases, followed by married
+patients with around 230 cases. All other categories unknown, widowed, divorced, and undefined appear in much smaller numbers. This pattern suggests that most
+neurosurgical patients are single, possibly reflecting a younger patient population.
+\newpage
+
+# ANOVA Section
+# Hypotheses
+
+H0: There is no significant difference in The mean number of monthly neurosurgery operations across all regions. 
+
+
+Ha: There is significant difference in the mean number of monthly neurosurgery operations across all regions.
+
+# Predictor variable (x) = REGION
+# Response variable (y) = Operations (monthly)
+
+```{r anova regions}
+
+anova_region <- aov(Number_of_Operations ~ REGION, data = region_counts)
+summary(anova_region)
+
+
+monthly_counts <- df_clean %>%
+  group_by(REGION, MONTH_G) %>%
+  summarise(Operations = n(), .groups = "drop")
+
+anova_region <- aov(Operations ~ REGION, data = monthly_counts)
+summary(anova_region)
+
+```
+
+# Conclusion for ANOVA test
+The ANOVA results show a significant difference in the monthly number of neurosurgery operations across regions (F = 17.39, p = 0.000168). 
+Since the p-value is less than 0.05, we reject the null hypothesis and conclude Ha are statistically meaningful.                                          
+The differences between regions are mainly because big cities like Riyadh and Jeddah have larger hospitals and more patients compared to smaller regions.
+
+\newpage
+# Tukey
+
+Since the ANOVA test showed a significant difference, the Tukey HSD test will be used to see which regions will differ from each other. This test will help identify the specific pairs that show meaningful differences in the average number of operations.
+
+
+```{r tukey}
+tukey_result <- TukeyHSD(anova_region)
+tukey_result
+#  Plot confidence intervals
+par(mar = c(5, 12, 4, 2))
+plot(tukey_result, las = 2, cex.axis = 0.7)
+title("\nTukey HSD Regional Comparisons")
+
+```
+
+The results show that the Central Region has significant differences when compared with the Eastern, Northern, and Southern regions because the confidence intervals do not include zero which means the difference is clear. 
+The Western Region also shows significant differences when compared with these same regions for the same reason.
+
+On the other hand, no significant differences appear between Central and Western, or between Northern and Eastern, and also between Southern and Eastern or Southern and Northern, because their confidence intervals include zero. 
+This means these regions do not show a clear difference in the average number of operations.
+
+Overall, the results show that the Central Region and the Western Region are the ones that have clear differences when compared with the other regions.
+The remaining regions do not show clear differences with each other because their confidence intervals include zero.
