@@ -50,11 +50,6 @@ This project investigates whether the number of neurosurgery operations differs 
 ├── Neurosciences.ipynb          # Main Python analysis notebook
 ├── data/
 │   └── A_list_of_OR_For_Neurosciences_xlsx.xlsx
-├── outputs/
-│   ├── operations_by_region.png
-│   ├── gender_distribution.png
-│   ├── marital_distribution.png
-│   └── tukey_hsd.png
 ├── r_version/
 │   └── neurosurgery_analysis.Rmd
 └── README.md
